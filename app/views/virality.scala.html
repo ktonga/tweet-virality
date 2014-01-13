@@ -1,0 +1,36 @@
+@(embeddedTweet: String, tree: RtNode)
+
+@twcard(node: RtNode) = {
+  <li class="media">
+    <a class="pull-left" href="https://twitter.com/@node.id" target="_blank">
+      <img class="media-object" src="@node.image" alt="@node.id"/>
+    </a>
+    <div class="media-body">
+      <h4 class="media-heading">@node.name</h4>
+      <a href="https://twitter.com/@node.screenName" target="_blank">@@@node.screenName</a>
+      @if(node.children.nonEmpty) {
+        <ul class="media-list">
+          @for(child <- node.children) {
+            @twcard(child)
+          }
+        </ul>
+      }
+    </div>
+  </li>
+}
+
+@bootstrapmain(s"Tweet Virality - by ${tree.screenName}") {
+
+  <div class="col-md-6">
+    <h3>RT/FAV Tree</h3>
+    <ul class="media-list">
+      @twcard(tree)
+    </ul>
+  </div>
+
+  <div class="col-md-6">
+    <h3>The Tweet</h3>
+    @Html(embeddedTweet)
+  </div>
+
+}
