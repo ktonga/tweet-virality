@@ -1,7 +1,5 @@
-package controllers
+package com.github.ktonga.tweetvirality.controllers
 
-import models._
-import play.api._
 import play.api.mvc._
 import play.api.libs.ws._
 import scala.concurrent._
@@ -10,11 +8,12 @@ import akka.actor.Props
 import akka.pattern.ask
 import play.api.libs.concurrent.Akka
 import play.api.Play.current
-import models.TwitterRestApi._
 import akka.util.Timeout
-import scala.util.{Failure, Success}
+import com.github.ktonga.tweetvirality.models.virality.RtTreeBuilder
+import com.github.ktonga.tweetvirality.models.twitter.TwitterRestApi
+import com.github.ktonga.tweetvirality.models.twitter.TwitterRestApi._
 
-object Application extends Controller {
+object Virality extends Controller {
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
@@ -22,17 +21,13 @@ object Application extends Controller {
 
   implicit val timeout: Timeout = 10.seconds
 
-  def index = Action {
-    Ok(views.html.index())
-  }
-
   def virality(id: Long) = Action.async {
     val embeddedTweetFtr = embeddedTweet(id)
     for {
       et <- embeddedTweetFtr
       rts <- (twitterApi ? GetReTweets(id)).mapTo[ReTweets]
       tree <- RtTreeBuilder(rts.rts)
-    } yield Ok(views.html.virality(et, tree))
+    } yield Ok(com.github.ktonga.tweetvirality.views.html.virality(et, tree))
   }
 
   def embeddedTweet(id: Long): Future[String] = {

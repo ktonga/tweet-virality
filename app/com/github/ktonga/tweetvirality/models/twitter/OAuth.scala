@@ -1,5 +1,6 @@
-package models
+package com.github.ktonga.tweetvirality.models.twitter
 
+import scala.io.Source
 import javax.crypto
 import java.nio.charset.Charset
 import spray.http.{HttpEntity, MediaTypes, ContentType, HttpRequest}
@@ -7,6 +8,7 @@ import spray.http.HttpHeaders.RawHeader
 import org.parboiled.common.Base64
 import scala.collection.immutable.TreeMap
 import java.net.URLEncoder
+
 
 object OAuth {
   case class Consumer(key: String, secret: String)
@@ -68,3 +70,15 @@ object OAuth {
   private def bytes(str: String) = str.getBytes(Charset.forName("UTF-8"))
 
 }
+
+trait OAuthTwitterAuthorization {
+  import OAuth._
+  val home = System.getProperty("user.home")
+  val lines = Source.fromFile(s"$home/.twitter/oauth").getLines().toList
+
+  val consumer = Consumer(lines(0), lines(1))
+  val token = Token(lines(2), lines(3))
+
+  val authorize: (HttpRequest) => HttpRequest = oAuthAuthorizer(consumer, token)
+}
+

@@ -1,11 +1,8 @@
-package models
+package com.github.ktonga.tweetvirality.models.twitter
 
 import akka.actor.Actor
 import akka.pattern.pipe
 import scala.concurrent.Future
-import scala.io.Source
-import scala.util.Success
-import scala.util.Failure
 import spray.http.{HttpRequest, Uri}
 import spray.json.DefaultJsonProtocol
 import spray.httpx.SprayJsonSupport
@@ -13,12 +10,6 @@ import spray.client.pipelining._
 
 object TwitterRestApi {
   val uri = Uri("https://api.twitter.com/1.1")
-
-  // API Model
-  case class User(id: Long, name: String, screen_name: String, profile_image_url: String)
-  case class Tweet(id: Long, user: User)
-  case class ReTweet(id: Long, user: User, retweeted_status: Tweet)
-  case class Ids(ids: List[Long])
 
   // Protocol
   case class GetReTweets(id: Long)
@@ -64,16 +55,5 @@ class TwitterRestApi extends Actor
           Ids(List())
       } map(ids => Followers(ids.ids)) pipeTo sender
   }
-}
-
-trait OAuthTwitterAuthorization {
-  import OAuth._
-  val home = System.getProperty("user.home")
-  val lines = Source.fromFile(s"$home/.twitter/scalaexchange2013").getLines().toList
-
-  val consumer = Consumer(lines(0), lines(1))
-  val token = Token(lines(2), lines(3))
-
-  val authorize: (HttpRequest) => HttpRequest = oAuthAuthorizer(consumer, token)
 }
 

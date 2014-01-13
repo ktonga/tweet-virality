@@ -3,10 +3,10 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
+GET     /                           com.github.ktonga.tweetvirality.controllers.Application.index
 
 # Main feature (Retweets tree) page
-GET     /virality/:id               controllers.Application.virality(id: Long)
+GET     /virality/:id               com.github.ktonga.tweetvirality.controllers.Virality.virality(id: Long)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
