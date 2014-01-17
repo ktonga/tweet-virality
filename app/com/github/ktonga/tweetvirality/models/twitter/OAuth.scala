@@ -34,7 +34,7 @@ object OAuth {
             val p = param.split("=")
             p(0) -> percentEncode(p(1))
           }
-          (pairs.toMap, HttpEntity(ContentType(MediaTypes.`application/x-www-form-urlencoded`), "%s=%s" format (pairs(0)._1, pairs(0)._2)))
+          (pairs.toMap, httpRequest.entity)
         case e => (httpRequest.uri.query.toMap, e)
       }
 

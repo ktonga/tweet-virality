@@ -1,0 +1,40 @@
+@(other: com.github.ktonga.tweetvirality.models.twitter.User, people: List[com.github.ktonga.tweetvirality.models.people.Person])
+
+@main(s"People in Common - with ${other.screen_name}") {
+
+  <div class="col-md-12">
+    <h3>People in Common with @@@other.screen_name</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Person</th>
+                <th>You Follow</th>
+                <th>Follows You</th>
+                <th>@other.screen_name Follows</th>
+                <th>Follows @other.screen_name</th>
+            </tr>
+        </thead>
+        <tbody>
+        @for(person <- people) {
+            <tr>
+                <td class="media">
+                    <a class="pull-left" href="https://twitter.com/@person.user.screen_name" target="_blank">
+                        <img class="media-object" src="@person.user.profile_image_url" alt="@person.user.screen_name"/>
+                    </a>
+                    <div class="media-body">
+                        <h4 class="media-heading">@person.user.name</h4>
+                        <a href="https://twitter.com/@person.user.screen_name" target="_blank">@@@person.user.screen_name</a>
+                        @person.user.description
+                    </div>
+                </td>
+                <td>@person.youFollow</td>
+                <td>@person.followsYou</td>
+                <td>@person.heFollows</td>
+                <td>@person.followsHim</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+  </div>
+
+}

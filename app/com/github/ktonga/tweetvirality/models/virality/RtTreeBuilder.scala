@@ -7,13 +7,12 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Future
 import play.api.Play.current
-import com.github.ktonga.tweetvirality.models.twitter
-import twitter._
-import TwitterRestApi._
+import com.github.ktonga.tweetvirality.models.twitter.{ReTweet, TwitterRestApi, User}
+import com.github.ktonga.tweetvirality.models.twitter.TwitterRestApi.{Followers, GetFollowers}
 
 object RtTreeBuilder {
 
-  val UnknownUser = User(-1, "Unknown", "unknown", "/assets/images/unknown-person.png")
+  val UnknownUser = User(-1, "Unknown", "unknown", "/assets/images/unknown-person.png", "")
 
   val twitterApi = Akka.system.actorOf(Props[TwitterRestApi])
 
@@ -61,7 +60,7 @@ object RtTreeBuilder {
   def user2rtnode(user: User): RtNode =
     RtNode(user.id, user.name, user.screen_name, user.profile_image_url)
 
-  def getFollowers(id: Long) = (twitterApi ? GetFollowers(id)).mapTo[Followers].map(_.followers.toSet)
+  def getFollowers(id: Long) = (twitterApi ? GetFollowers(Some(Left(id)))).mapTo[Followers].map(_.ids.toSet)
 
 }
 

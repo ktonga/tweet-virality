@@ -8,5 +8,8 @@ GET     /                           com.github.ktonga.tweetvirality.controllers.
 # Main feature (Retweets tree) page
 GET     /virality/:id               com.github.ktonga.tweetvirality.controllers.Virality.virality(id: Long)
 
+# Secondary feature (People un common) page
+GET     /people/:screenName               com.github.ktonga.tweetvirality.controllers.People.people(screenName: String)
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
