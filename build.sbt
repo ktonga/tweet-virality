@@ -8,7 +8,9 @@ libraryDependencies ++= Seq(
   "io.spray"                % "spray-can"             % "1.2.0",
   "io.spray"                % "spray-client"          % "1.2.0",
   "io.spray"                % "spray-routing"         % "1.2.0",
-  "io.spray"               %% "spray-json"            % "1.2.5"
-)     
+  "io.spray"               %% "spray-json"            % "1.2.5",
+  "org.neo4j"               % "neo4j"                 % "2.0.0",
+  "org.scalacheck"         %% "scalacheck"            % "1.11.3"
+)
 
 play.Project.playScalaSettings

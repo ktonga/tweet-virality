@@ -2,6 +2,7 @@ package com.github.ktonga.tweetvirality.models
 
 import spray.json.DefaultJsonProtocol
 import spray.httpx.SprayJsonSupport
+import scala.util.control.NoStackTrace
 
 package object twitter {
 
@@ -22,5 +23,7 @@ package object twitter {
     implicit val idsFormat = jsonFormat1(Ids)
     implicit val friendshipFormat = jsonFormat4(Friendship)
   }
+
+  class MissingFromCacheException(message: String) extends Exception(message) with NoStackTrace
 
 }

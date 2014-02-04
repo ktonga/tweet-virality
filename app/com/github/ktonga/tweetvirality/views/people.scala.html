@@ -1,5 +1,37 @@
 @(other: com.github.ktonga.tweetvirality.models.twitter.User, people: List[com.github.ktonga.tweetvirality.models.people.Person])
 
+@import com.github.ktonga.tweetvirality.views.Utils._
+
+@fourColsHead(screenName: String) = {
+                <th>You Follow</th>
+                <th>Follows You</th>
+                <th>@screenName Follows</th>
+                <th>Follows @screenName</th>
+}
+
+
+@fourColsRow(person: com.github.ktonga.tweetvirality.models.people.Person) = {
+                <td><span class="glyphicon glyphicon-@flagIcon(person.youFollow)"></span></td>
+                <td><span class="glyphicon glyphicon-@flagIcon(person.followsYou)"></span></td>
+                <td><span class="glyphicon glyphicon-@flagIcon(person.heFollows)"></span></td>
+                <td><span class="glyphicon glyphicon-@flagIcon(person.followsHim)"></span></td>
+}
+
+@twoColsHead(screenName: String) = {
+                <th class="col-sm-2">You</th>
+                <th class="col-sm-2">@screenName</th>
+}
+
+
+@twoColsRow(person: com.github.ktonga.tweetvirality.models.people.Person) = {
+<td>
+    <span class="glyphicon glyphicon-user"></span><span class="glyphicon glyphicon-@compoundIcon(person.youFollow, person.followsYou)"></span>
+</td>
+<td>
+    <span class="glyphicon glyphicon-user"></span><span class="glyphicon glyphicon-@compoundIcon(person.heFollows, person.followsHim)"></span>
+</td>
+}
+
 @main(s"People in Common - with ${other.screen_name}") {
 
   <div class="col-md-12">
@@ -7,11 +39,8 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Person</th>
-                <th>You Follow</th>
-                <th>Follows You</th>
-                <th>@other.screen_name Follows</th>
-                <th>Follows @other.screen_name</th>
+                <th class="col-sm-8">Person</th>
+                @twoColsHead(other.screen_name)
             </tr>
         </thead>
         <tbody>
@@ -27,10 +56,7 @@
                         @person.user.description
                     </div>
                 </td>
-                <td>@person.youFollow</td>
-                <td>@person.followsYou</td>
-                <td>@person.heFollows</td>
-                <td>@person.followsHim</td>
+                @twoColsRow(person)
             </tr>
         }
         </tbody>
