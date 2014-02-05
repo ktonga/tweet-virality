@@ -1,28 +1,38 @@
 package com.github.ktonga.tweetvirality.models.people
 
-import play.api.libs.concurrent.Akka
-import akka.actor.Props
-import com.github.ktonga.tweetvirality.models.twitter.{TwitterCache, User, TwitterRestApi, MissingFromCacheException}
+import com.github.ktonga.tweetvirality.models.twitter._
+import TwitterRestApi._
+import TwitterCache._
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
-import TwitterRestApi._
 import akka.pattern.ask
-import play.api.Play.current
-import TwitterCache._
-import org.scalacheck.Properties
 
-object PeopleInCommonBuilder extends FriendshipsBuilder {
+trait Relationship {
+  def followers(user: Option[String]): Future[Set[Long]]
+  def friends(user: Option[String]): Future[Set[Long]]
+}
+trait UsersLookup {
+  def usersLookup(ids: List[Long]): Future[List[User]]
+}
+trait Friendships {
+  def friendships(yourFriends: Set[Long], yourFollowers: Set[Long],
+        hisFriends: Set[Long], hisFollowers: Set[Long]): Set[(Long, Boolean, Boolean, Boolean, Boolean)]
+}
+
+trait DefaultAskTimeout {
+  implicit val timeout: Timeout = 10.seconds
+}
+
+trait PeopleInCommonMain {
+  this: Relationship
+    with Friendships
+    with UsersLookup =>
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  val twitterCache = Akka.system.actorOf(Props(new TwitterCache("/tmp/twitter/")), "tw-cache")
-  val twitterApi = Akka.system.actorOf(Props[TwitterRestApi], "tw-api")
-
-  implicit val timeout: Timeout = 10.seconds
-
-  def apply(screenName: String): Future[List[Person]] = {
+  def peopleInCommon(screenName: String): Future[List[Person]] = {
     val yourFriendsFtr = friends(None)
     val yourFollowersFtr = followers(None)
     val hisFriendsFtr = friends(Some(screenName))
@@ -33,7 +43,7 @@ object PeopleInCommonBuilder extends FriendshipsBuilder {
       yourFollowers <- yourFollowersFtr
       hisFriends <- hisFriendsFtr
       hisFollowers <- hisFollowersFtr
-    } yield buildFriendships(yourFriends, yourFollowers, hisFriends, hisFollowers)
+    } yield friendships(yourFriends, yourFollowers, hisFriends, hisFollowers)
 
     for {
       friendships <- friendshipsFtr.map(_.toList)
@@ -41,6 +51,22 @@ object PeopleInCommonBuilder extends FriendshipsBuilder {
     } yield toPeople(friendships, users)
 
   }
+
+  private def toPeople(friendships: List[(Long, Boolean, Boolean, Boolean, Boolean)], users: List[User]) = {
+    val usersById = users.map(u => (u.id, u)).toMap
+    friendships collect {
+      case f if usersById.contains(f._1) =>
+        val user = usersById(f._1)
+        Person(user, f._2, f._3, f._4, f._5)
+    }
+  }
+
+}
+
+trait RelationshipMain extends Relationship with DefaultAskTimeout {
+  this: TwitterApi with TwitterCaching =>
+
+  import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   def relationship(apiMsg: UserIdentifier => Any, cacheMsg: String => Any, saveMsg: (String, Set[Long]) => Any): Option[String] => Future[Set[Long]] = {
     nameOpt =>
@@ -64,8 +90,17 @@ object PeopleInCommonBuilder extends FriendshipsBuilder {
       }
   }
 
-  val followers = relationship(GetFollowers.apply, FollowersFor.apply, SaveFollowers.apply)
-  val friends = relationship(GetFriends.apply, FriendsFor.apply, SaveFriends.apply)
+  val followersFunc = relationship(GetFollowers.apply, FollowersFor.apply, SaveFollowers.apply)
+  val friendsFunc = relationship(GetFriends.apply, FriendsFor.apply, SaveFriends.apply)
+
+  def followers(user: Option[String]): Future[Set[Long]] = followersFunc(user)
+  def friends(user: Option[String]): Future[Set[Long]] = friendsFunc(user)
+}
+
+trait UsersLookupMain extends UsersLookup with DefaultAskTimeout {
+  this: TwitterApi with TwitterCaching =>
+
+  import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   def usersLookup(ids: List[Long]): Future[List[User]] = {
     val cacheFtr = (twitterCache ? UsersFor(ids)) map {
@@ -84,21 +119,11 @@ object PeopleInCommonBuilder extends FriendshipsBuilder {
       }
     }
   }
-
-  def toPeople(friendships: List[(Long, Boolean, Boolean, Boolean, Boolean)], users: List[User]) = {
-    val usersById = users.map(u => (u.id, u)).toMap
-    friendships collect {
-      case f if usersById.contains(f._1) =>
-        val user = usersById(f._1)
-        Person(user, f._2, f._3, f._4, f._5)
-    }
-  }
-
 }
 
-trait FriendshipsBuilder {
+trait FriendshipsMain extends Friendships {
 
-  def buildFriendships(yourFriends: Set[Long], yourFollowers: Set[Long],
+  def friendships(yourFriends: Set[Long], yourFollowers: Set[Long],
                        hisFriends: Set[Long], hisFollowers: Set[Long]) = {
 
     val hisFnF = hisFriends ++ hisFollowers
@@ -112,25 +137,14 @@ trait FriendshipsBuilder {
       case (id, friend, follower) if hisFnF.contains(id) =>
         (id, friend, follower, hisFriends.contains(id), hisFollowers.contains(id))
     }
-
   }
-
 }
 
-object FriendshipsChecks extends App with FriendshipsBuilder {
-  import org.scalacheck._
-  val idGen = Gen.choose(1L, 100000L)
-  val setGen = Gen.containerOfN[Set, Long](200, idGen)
-  Prop.forAll(setGen, setGen, setGen, setGen) {
-    (yfrs: Set[Long], yfos: Set[Long], hfrs: Set[Long], hfos: Set[Long]) =>
-    val fshp = buildFriendships(yfrs, yfos, hfrs, hfos)
-    fshp forall {
-      case (id, yfr, yfo, hfr, hfo) =>
-        val (cyfr, cyfo, chfr, chfo) = (yfrs.contains(id), yfos.contains(id), hfrs.contains(id), hfos.contains(id))
-        val valid = ( (yfr || yfo) && (hfr || hfo) ) && yfr == cyfr && yfo == cyfo && hfr == chfr && hfo == chfo
-        if(!valid) println(s"$id: ($yfr, $yfo, $hfr, $hfo) -> ($cyfr, $cyfo, $chfr, $chfo)")
-        valid
-    }
-  }.check
-}
+trait PeopleInCommon
+  extends PeopleInCommonMain
+  with FriendshipsMain
+  with RelationshipMain
+  with UsersLookupMain
+  with TwitterCachingMain
+  with TwitterApiMain
 

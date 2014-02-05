@@ -9,6 +9,14 @@ import spray.http.HttpRequest
 import scala.util.Failure
 import scala.Some
 import scala.util.Success
+import play.api.libs.concurrent.Akka
+import play.api.Play.current
+
+trait TwitterApi { val twitterApi: ActorRef }
+
+trait TwitterApiMain extends TwitterApi {
+  val twitterApi = Akka.system.actorOf(Props[TwitterRestApi], "tw-api")
+}
 
 object TwitterRestApi {
   val uri = Uri("https://api.twitter.com/1.1")

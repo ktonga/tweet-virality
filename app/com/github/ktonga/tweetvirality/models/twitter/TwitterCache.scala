@@ -1,7 +1,15 @@
 package com.github.ktonga.tweetvirality.models.twitter
 
-import akka.actor.Actor
+import akka.actor.{Props, ActorRef, Actor}
 import akka.actor.Status.Failure
+import play.api.libs.concurrent.Akka
+import play.api.Play.current
+
+trait TwitterCaching { val twitterCache: ActorRef }
+
+trait TwitterCachingMain extends TwitterCaching {
+  val twitterCache = Akka.system.actorOf(Props(new TwitterCache("/tmp/twitter/")), "tw-cache")
+}
 
 object TwitterCache {
   case class FollowersFor(name: String)
